@@ -7,5 +7,7 @@ a simulation of its motion over time. The model of the simulation is based on
 using normal euler's method on the complicated second order differential
 equations. The state space of the each independent pendulum was also plotted.
 
+I am also currently looking into adding a bifurcation diagram for the double pendulum
+
 Created by Thomas Chan (Physics Mphys student at University of Manchester)
 22/12/2021
