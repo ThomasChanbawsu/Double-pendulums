@@ -26,9 +26,9 @@ GRAVITATIONAL_CONSTANT = 9.81
 # Fill in your choice of thetas and thetadots in the variable PENDULUM_LIST
 # The information for each double pendulum goes [theta1, theta1dot, theta2
 # ,theta2dot]. You can also fill in multiple double pendulums
-PENDULUM_LIST = [[120, 0, 30, 0], [60, 0 , 30, 0], [-20, 0, 60, 0]]
-TIMESPAN = 0.01
-time = np.arange(0, 20, TIMESPAN)
+PENDULUM_LIST = [[10, 0 , -10, 0]]
+TIMESPAN = 0.005
+time = np.arange(0, 15, TIMESPAN)
 HISTORY_LEN = 250
 # sidenote: this code uses normal Euler's method, which only works for small
 # times. If t gets very large, the error accumulated by Euler's method gets
@@ -187,11 +187,78 @@ def positions(theta_1_array, theta_2_array):
 
     return bob_coordinates
 
+def hamiltonian(theta1, theta2, theta1_dot, theta2_dot):
+    '''
+    calculates the hamiltonian (aka also energy) of the double pendulum
+    system. It's purpose is to track the errors made by our integration method
+
+    Parameters
+    ----------
+    theta1 : float 1d array
+    theta2 : float 1d array
+    theta1_dot : float 1d array
+    theta2_dot : float 1d array
+
+    Returns
+    -------
+    float array
+
+    '''
+    T1 = 0.5 * (MASS1 + MASS2) * (LENGTH1 **2) * (theta1_dot ** 2)
+    T2 = 0.5 * MASS2 * (LENGTH2 ** 2) * (theta2_dot ** 2)
+    diff = theta1 - theta2
+    T3 = MASS2 * LENGTH1 * LENGTH2 * theta1_dot * theta2_dot * np.cos(diff)
+    T = T1 + T2 + T3
+    V1 = -(MASS1 + MASS2) * GRAVITATIONAL_CONSTANT * LENGTH1 * np.cos(theta1)
+    V2 = - MASS2 * GRAVITATIONAL_CONSTANT * LENGTH2 * np.cos(theta2)
+    V = V1 + V2
+    return T+V
+
+def plot_angles(data):
+    '''
+    plots out the angular displacements made by both bobs over time. It also
+    plots out the energy of the double pendulum based on Euler's method
+    approximation and the actual initial energy.
+
+    Parameters
+    ----------
+    data : float ndarray
+            must contain theta1, theta2
+
+    Returns
+    -------
+    None.
+
+    '''
+    energy = hamiltonian(data[:,0], data[:,2], data[:,1], data[:,3])
+    initial_energy = energy[0]
+    figure = plt.figure()
+    grid = figure.add_gridspec(2, 1)
+    graph = figure.add_subplot(grid[0, 0])
+    graph.plot(time, data[:-1,0], '-', label = r'$\theta_1$')
+    graph.plot(time, data[:-1,2], '-', label = r'$\theta_2$')
+    graph.set_title('Amplitude of both pendulums across time t')
+    graph.set_xlabel('Angular Displacement (in radians)')
+    graph.set_ylabel('Time (seconds)')
+    graph.grid()
+    graph.legend()
+    graph2 = figure.add_subplot(grid[1, 0])
+    graph2.plot(time, energy[:-1], '-', label = "energy (Euler's method")
+    graph2.axhline(y = initial_energy, linestyle = '--', color = 'red',
+                   label = 'actual energy')
+    graph2.set_title('Energy of double pendulum over time')
+    graph2.set_xlabel('time (seconds)')
+    graph2.set_ylabel('energy (J)')
+    graph2.grid()
+    graph2.legend()
+    plt.tight_layout()
+    plt.show()
 
 data = integration_process()
 coordinate_list = []
 for pendulum_data in data:
     coordinates = positions(pendulum_data[:,0], pendulum_data[:,2])
+    plot_angles(pendulum_data)
     coordinate_list.append(coordinates)
 coordinate_list = np.array(coordinate_list)
 
@@ -291,3 +358,5 @@ anim = animation.FuncAnimation(fig, animate, frames = len(time),
                  interval=TIMESPAN, blit= True)
 
 plt.show()
+
+    
