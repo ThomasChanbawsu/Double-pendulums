@@ -26,7 +26,7 @@ GRAVITATIONAL_CONSTANT = 9.81
 # Fill in your choice of thetas and thetadots in the variable PENDULUM_LIST
 # The information for each double pendulum goes [theta1, theta1dot, theta2
 # ,theta2dot]. You can also fill in multiple double pendulums
-PENDULUM_LIST = [[10, 0 , -10, 0]]
+PENDULUM_LIST = [[10, 0 , -10, 0], [50, 25, 30, 0]]
 TIMESPAN = 0.005
 time = np.arange(0, 15, TIMESPAN)
 HISTORY_LEN = 250
@@ -142,7 +142,6 @@ def integration_process():
                                              theta2_ddot)
             next_theta1dot = numerical_int(TIMESPAN, theta1dot, theta1_ddot)
             next_theta1 = numerical_int(TIMESPAN, theta1, theta1dot)
-
             theta2_ddot = Lagrange_eq_theta_1(theta2, theta1, theta1dot,
                                              theta1_ddot)
             next_theta2dot = numerical_int(TIMESPAN, theta2dot, theta2_ddot)
@@ -159,7 +158,8 @@ def integration_process():
             theta2dot = next_theta2dot
         motion_data.append(pendulum)
     return motion_data
-
+        
+    
 def positions(theta_1_array, theta_2_array):
     '''
     Converts the theta values into corresponding positions of the bob's
@@ -286,7 +286,7 @@ histories = [(deque(maxlen=HISTORY_LEN), deque(maxlen=HISTORY_LEN))
 ax2 = fig.add_subplot(grid[1,0], autoscale_on=False,
                           xlim = (-5, 5),
                           ylim = (-5, 5))
-ax2.set_title('State space of the pendulum', fontsize = 16)
+ax2.set_title(r'Plot of $\theta_1$ vs $\dot{\theta_1}$', fontsize = 16)
 ax2.grid()
 ax2.set_xlabel(r'$\theta$')
 ax2.set_ylabel(r'speed $\dot{\theta}$')
@@ -297,10 +297,10 @@ ax2.legend()
 ax3 = fig.add_subplot(grid[1,1], autoscale_on=False,
                           xlim = (-5, 5),
                           ylim = (-5, 5))
-ax3.set_title(r'State space of the second pendulum', fontsize = 16)
+ax3.set_title(r'$\theta_2$ vs $\dot{\theta_2}$', fontsize = 16)
 ax3.grid()
 ax3.set_xlabel(r'$\theta_2$')
-ax3.set_ylabel(r'spped $\dot{\theta_2}$')
+ax3.set_ylabel(r'speed $\dot{\theta_2}$')
 state_lines2 = [ax3.plot([], [], 'o-', lw=1, ms = 1,
                     label = f'pendulum {no}')[0] for no in range(len(data))]
 ax3.legend()
