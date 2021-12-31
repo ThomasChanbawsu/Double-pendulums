@@ -136,8 +136,6 @@ def Euler_method(variables):
     '''
     theta1, theta1dot, theta2, theta2dot = variables
     theta1_ddot = lagrange_deriv1(theta1, theta1dot, theta2, theta2dot)
-    #theta1_ddot = Lagrange_eq_theta_1(theta1, theta2, theta2dot,
-     #                                        theta2_ddot)
     next_theta1dot = numerical_int(TIMESPAN, theta1dot, theta1_ddot)
     next_theta1 = numerical_int(TIMESPAN, theta1, theta1dot)
     
@@ -307,8 +305,8 @@ def plot_angles(data):
     graph.plot(time, data[:-1,0], '-', label = r'$\theta_1$')
     graph.plot(time, data[:-1,2], '-', label = r'$\theta_2$')
     graph.set_title('Amplitude of both pendulums across time t')
-    graph.set_xlabel('Angular Displacement (in radians)')
-    graph.set_ylabel('Time (seconds)')
+    graph.set_xlabel('Time (seconds)')
+    graph.set_ylabel('Angular Displacement (in radians)')
     graph.grid()
     graph.legend()
     graph2 = figure.add_subplot(grid[1, 0])
