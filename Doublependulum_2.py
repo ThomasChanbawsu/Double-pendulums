@@ -2,9 +2,8 @@
 '''
 This program file allows the user to input a set of double pendulums
 containing the initial information of all the angles and speeds, and produces
-a simulation of its motion over time. The model of the simulation is based on
-using normal euler's method on the complicated second order differential
-equations. The state space of the each independent pendulum was also plotted.
+a simulation of its motion over time. It's a seperate copy of the original
+file which allows you to compare the euler method and RK4 method
 
 Created by Thomas Chan (Physics Mphys student at University of Manchester)
 22/12/2021
@@ -26,9 +25,9 @@ GRAVITATIONAL_CONSTANT = 9.81
 # Fill in your choice of thetas and thetadots in the variable PENDULUM_LIST
 # The information for each double pendulum goes [theta1, theta1dot, theta2
 # ,theta2dot]. You can also fill in multiple double pendulums
-PENDULUM_LIST = [[120, 0, -30, 0], [70, 25, 70, 0]]
+PENDULUM_LIST = [[30, 0 , -30, 0]]
 TIMESPAN = 0.005
-time = np.arange(0, 15, TIMESPAN)
+time = np.arange(0, 10, TIMESPAN)
 HISTORY_LEN = 250
 # sidenote: this code uses normal Euler's method, which only works for small
 # times. If t gets very large, the error accumulated by Euler's method gets
@@ -45,6 +44,60 @@ def convert_to_rad(pendulum_list):
     '''
     return np.deg2rad(pendulum_list)
 
+
+def deriv1(theta1, theta1dot, theta2, theta2dot):
+    '''
+    computes the second order differential equation of theta1dot based on
+    variables shown in the bracket. This is used for the RK4 method
+
+    Parameters
+    ----------
+    theta1 : float
+    theta1dot : float
+    theta2 : float
+    theta2dot : float
+
+    Returns
+    -------
+    theta1ddot : float
+    '''
+    delta = theta1 - theta2
+    denominator = MASS1 + MASS2 * (1 - np.cos(delta) * np.cos(delta))
+    term1 = -MASS2 * theta1dot * theta1dot * np.sin(delta) * np.cos(delta)
+    term2 = (MASS2 * GRAVITATIONAL_CONSTANT * np.sin(theta2) * np.cos(delta)
+             / LENGTH1)
+    term3 = -MASS2 * theta2dot * theta2dot * np.sin(delta) * LENGTH2 / LENGTH1
+    term4 = (-(MASS1 + MASS2) * GRAVITATIONAL_CONSTANT * np.sin(theta1) 
+             / LENGTH1)
+    theta1ddot = (term1 + term2 + term3 + term4) / denominator
+    return theta1ddot
+
+def deriv2(theta1, theta1dot, theta2, theta2dot):
+    '''
+    computes the second order differential equation of theta2dot based on
+    variables shown in the bracket. This is used for the RK4 method
+
+    Parameters
+    ----------
+    theta1 : float
+    theta1dot : float
+    theta2 : float
+    theta2dot : float
+
+    Returns
+    -------
+    theta1ddot : float
+    '''
+    delta = theta1 - theta2
+    denominator = MASS1 + MASS2 * (1 - np.cos(delta) * np.cos(delta))
+    term1 = ((MASS1 + MASS2) * GRAVITATIONAL_CONSTANT * np.sin(theta1) *
+             np.cos(delta)/ LENGTH2)
+    term2 = MASS2 * (theta2dot ** 2) * np.sin(delta) * np.cos(delta)
+    term3 = ((MASS1 + MASS2) * theta1dot * theta1dot * np.sin(delta) * LENGTH1
+             /LENGTH2)
+    term4 = -(MASS1+MASS2) * GRAVITATIONAL_CONSTANT * np.sin(theta2) / LENGTH2
+    theta2ddot = (term1 + term2 + term3 + term4) / denominator
+    return theta2ddot
 
 def numerical_int(timespan, previous_value, slope_value):
     '''
@@ -63,140 +116,6 @@ def numerical_int(timespan, previous_value, slope_value):
     '''
     return previous_value + slope_value * timespan
 
-def lagrange_deriv1(theta1, theta1dot, theta2, theta2dot):
-    '''
-    computes the second order differential equation of theta1dot based on
-    variables shown in the bracket. This is used for the RK4 method
-
-    Parameters
-    ----------
-    theta1 : float
-    theta1dot : float
-    theta2 : float
-    theta2dot : float
-
-    Returns
-    -------
-    theta1ddot : float
-
-    '''
-    delta = theta1 - theta2
-    denominator = MASS1 + MASS2 * (1 - np.cos(delta) * np.cos(delta))
-    term1 = -MASS2 * theta1dot * theta1dot * np.sin(delta) * np.cos(delta)
-    term2 = (MASS2 * GRAVITATIONAL_CONSTANT * np.sin(theta2) * np.cos(delta)
-             / LENGTH1)
-    term3 = -MASS2 * theta2dot * theta2dot * np.sin(delta) * LENGTH2 / LENGTH1
-    term4 = (-(MASS1 + MASS2) * GRAVITATIONAL_CONSTANT * np.sin(theta1) 
-             / LENGTH1)
-    theta1ddot = (term1 + term2 + term3 + term4) / denominator
-    return theta1ddot
-
-def lagrange_deriv2(theta1, theta1dot, theta2, theta2dot):
-    '''
-    computes the second order differential equation of theta2dot based on
-    variables shown in the bracket. This is used for the RK4 method
-
-    Parameters
-    ----------
-    theta1 : float
-    theta1dot : float
-    theta2 : float
-    theta2dot : float
-
-    Returns
-    -------
-    theta1ddot : float
-
-    '''
-    delta = theta1 - theta2
-    denominator = MASS1 + MASS2 * (1 - np.cos(delta) * np.cos(delta))
-    term1 = ((MASS1 + MASS2) * GRAVITATIONAL_CONSTANT * np.sin(theta1) *
-             np.cos(delta)/ LENGTH2)
-    term2 = MASS2 * (theta2dot ** 2) * np.sin(delta) * np.cos(delta)
-    term3 = ((MASS1 + MASS2) * theta1dot * theta1dot * np.sin(delta) * LENGTH1
-             /LENGTH2)
-    term4 = -(MASS1+MASS2) * GRAVITATIONAL_CONSTANT * np.sin(theta2) / LENGTH2
-    theta2ddot = (term1 + term2 + term3 + term4) / denominator
-    return theta2ddot
-
-def Euler_method(variables):
-    '''
-    computes the second order differential equation by euler's method. This
-    was used in the first draft but kept for people to use if they want to.
-
-    Parameters
-    ----------
-    variables : np.array
-                must contain theta1, theta1dot, theta2, theta2dot in this order
-
-    Returns
-    -------
-    np.array
-
-    '''
-    theta1, theta1dot, theta2, theta2dot = variables
-    theta1_ddot = lagrange_deriv1(theta1, theta1dot, theta2, theta2dot)
-    #theta1_ddot = Lagrange_eq_theta_1(theta1, theta2, theta2dot,
-     #                                        theta2_ddot)
-    next_theta1dot = numerical_int(TIMESPAN, theta1dot, theta1_ddot)
-    next_theta1 = numerical_int(TIMESPAN, theta1, theta1dot)
-    
-    theta2_ddot = lagrange_deriv2(theta1, theta1dot, theta2, theta2dot)
-    next_theta2dot = numerical_int(TIMESPAN, theta2dot, theta2_ddot)
-    next_theta2 = numerical_int(TIMESPAN, theta2, theta2dot)
-    
-    return np.array([next_theta1, next_theta1dot, next_theta2, next_theta2dot])
-
-def runge_kutta_4(variables):
-    '''
-    this integrator function finds the next approximate point of the variables
-    using the accurate runge kutta 4th order numerical method (RK4 for short).
-    The variables include theta1, theta2, theta1dot, theta2dot.
-
-    Parameters
-    ----------
-    variables : float array
-
-    Returns
-    -------
-    float array
-
-    '''
-    # variables: variables we want to integrate
-    
-    midpt = TIMESPAN * 0.5
-    theta1, theta1dot, theta2, theta2dot = variables
-    k_0 = theta1dot
-    s_0 = theta2dot
-    l_0 = lagrange_deriv1(theta1, theta1dot, theta2, theta2dot)
-    g_0 = lagrange_deriv2(theta1, theta1dot, theta2, theta2dot)
-    
-    k_1 = theta1dot + midpt * l_0
-    s_1 = theta2dot + midpt * g_0
-    l_1 = lagrange_deriv1((theta1 + midpt * k_0), k_1, (theta2 + midpt * s_0),
-                          s_1)
-    g_1 = lagrange_deriv2((theta1 + midpt * k_0), k_1, (theta2 + midpt * s_0),
-                          s_1)
-    
-    k_2 = theta1dot + midpt * l_1
-    s_2 = theta2dot + midpt * g_1
-    l_2 = lagrange_deriv1((theta1 + midpt * k_1), k_2, (theta2 + midpt * s_1),
-                          s_2)
-    g_2 = lagrange_deriv2((theta1 + midpt * k_1), k_2, (theta2 + midpt * s_1),
-                          s_2)
-    
-    k_3 = theta1dot + TIMESPAN * l_2
-    s_3 = theta2dot + TIMESPAN * g_2
-    l_3 = lagrange_deriv1((theta1 + TIMESPAN * k_3), k_2, (theta2
-                                                    + TIMESPAN * s_3),  s_2)
-    g_3 = lagrange_deriv2((theta1 + TIMESPAN * k_3), k_2, (theta2
-                                            + TIMESPAN * s_3), s_2)
-    theta1 = theta1 + TIMESPAN * (k_0 + 2 * k_1 + 2 * k_2 + 2 * k_3)/6
-    theta1dot = theta1dot + TIMESPAN * (l_0 + 2 * l_1 + 2 * l_2 + 2 * l_3)/6
-    theta2 = theta2 + TIMESPAN * (s_0 + 2 * s_1 + 2 * s_2 + 2 * s_3)/6
-    theta2dot = theta2dot + TIMESPAN * (g_0 + 2 * g_1 + 2 * g_2 + 2 * g_3)/6
-    
-    return np.array([theta1, theta1dot, theta2, theta2dot])
 
 def integration_process():
     '''
@@ -215,18 +134,39 @@ def integration_process():
     '''
     pendulum_list = convert_to_rad(PENDULUM_LIST)
     motion_data = []
+    motion_data2 = []
     for pendulum in pendulum_list:
         theta1, theta1dot, theta2, theta2dot = pendulum
-        pendulum = np.reshape(pendulum, (1,4))
+        theta1_ddot = 0
+        theta2_ddot = 0
+        pendulum = np.array(pendulum)
+        pendulum2 = np.reshape(pendulum, (1,4))
         for _ in time:
-            # If you want to use Euler's method, comment out the rk4 line and
-            # use below line
-            #instant_array = Euler_method(pendulum[-1])
-            # runge-kutta 4
-            instant_array = runge_kutta_4(pendulum[-1])
+            theta1_ddot = deriv1(theta1, theta1dot, theta2, theta2dot)
+            next_theta1dot = numerical_int(TIMESPAN, theta1dot, theta1_ddot)
+            next_theta1 = numerical_int(TIMESPAN, theta1, theta1dot)
+
+            theta2_ddot = deriv2(theta1, theta1dot, theta2, theta2dot)
+            next_theta2dot = numerical_int(TIMESPAN, theta2dot, theta2_ddot)
+            next_theta2 = numerical_int(TIMESPAN, theta2, theta2dot)
+
+            instant_array = (next_theta1, next_theta1dot, next_theta2,
+                             next_theta2dot)
+
             pendulum = np.vstack((pendulum, instant_array))
+            
+            
+            
+            # runge-kutta 4
+            instant_array2 = runge_kutta_4(pendulum2[-1])
+            pendulum2 = np.vstack((pendulum2, instant_array2))
+            theta1 = next_theta1
+            theta2 = next_theta2
+            theta1dot = next_theta1dot
+            theta2dot = next_theta2dot
         motion_data.append(pendulum)
-    return motion_data
+        motion_data2.append(pendulum2)
+    return motion_data, motion_data2
         
     
 def positions(theta_1_array, theta_2_array):
@@ -283,7 +223,7 @@ def hamiltonian(theta1, theta2, theta1_dot, theta2_dot):
     V = V1 + V2
     return T+V
 
-def plot_angles(data):
+def plot_angles(data, data2):
     '''
     plots out the angular displacements made by both bobs over time. It also
     plots out the energy of the double pendulum based on Euler's method
@@ -300,20 +240,32 @@ def plot_angles(data):
 
     '''
     energy = hamiltonian(data[:,0], data[:,2], data[:,1], data[:,3])
+    energy2 = hamiltonian(data2[:,0], data2[:,2], data2[:,1], data2[:,3])
     initial_energy = energy[0]
-    figure = plt.figure()
-    grid = figure.add_gridspec(2, 1)
+    figure = plt.figure(figsize = (10,8))
+    grid = figure.add_gridspec(2, 2)
     graph = figure.add_subplot(grid[0, 0])
-    graph.plot(time, data[:-1,0], '-', label = r'$\theta_1$')
-    graph.plot(time, data[:-1,2], '-', label = r'$\theta_2$')
-    graph.set_title('Amplitude of both pendulums across time t')
+    graph.plot(time, data[:-1,0], '-', label = r'$\theta_1$ (Euler)')
+    graph.plot(time, data2[:-1,0], '--', label = r'$\theta_1$ (RK4)')
+    graph.set_title('Amplitude of top pendulum across time t')
     graph.set_xlabel('Angular Displacement (in radians)')
     graph.set_ylabel('Time (seconds)')
     graph.grid()
     graph.legend()
-    graph2 = figure.add_subplot(grid[1, 0])
-    graph2.plot(time, energy[:-1], '-', label = "approximated energy")
-    graph2.axhline(y = initial_energy, linestyle = '--', color = 'red',
+    graph1 = figure.add_subplot(grid[0, 1])
+    graph1.plot(time, data[:-1,2], '-', label = r'$\theta_2$ (Euler)', 
+                color = 'green')
+    graph1.plot(time, data2[:-1,2], '--', label = r'$\theta_2$ (RK4)'
+                , color = 'red')
+    graph1.set_title('Amplitude of bottom pendulum across time t')
+    graph1.set_xlabel('Angular Displacement (in radians)')
+    graph1.set_ylabel('Time (seconds)')
+    graph1.grid()
+    graph1.legend()
+    graph2 = figure.add_subplot(grid[1, 0:2])
+    graph2.plot(time[:1000], energy[:1000], '-', label = "energy (Euler's method)")
+    graph2.plot(time[:1000], energy2[:1000], '-', label = "energy (RK4 method)")
+    graph2.axhline(y = initial_energy, linestyle = '--', color = 'black',
                    label = 'actual energy')
     graph2.set_title('Energy of double pendulum over time')
     graph2.set_xlabel('time (seconds)')
@@ -321,20 +273,48 @@ def plot_angles(data):
     graph2.grid()
     graph2.legend()
     plt.tight_layout()
+    plt.savefig('double_pendulum_(E vs RK4).png', dpi = 500)
     plt.show()
     
+def runge_kutta_4(variables):
+    # variables: variables we want to integrate
+    
+    midpt = TIMESPAN * 0.5
+    theta1, theta1dot, theta2, theta2dot = variables
+    k_0 = theta1dot
+    s_0 = theta2dot
+    l_0 = deriv1(theta1, theta1dot, theta2, theta2dot)
+    g_0 = deriv2(theta1, theta1dot, theta2, theta2dot)
+    
+    k_1 = theta1dot + midpt * l_0
+    s_1 = theta2dot + midpt * g_0
+    l_1 = deriv1((theta1 + midpt * k_0), k_1, (theta2 + midpt * s_0), s_1)
+    g_1 = deriv2((theta1 + midpt * k_0), k_1, (theta2 + midpt * s_0), s_1)
+    
+    k_2 = theta1dot + midpt * l_1
+    s_2 = theta2dot + midpt * g_1
+    l_2 = deriv1((theta1 + midpt * k_1), k_2, (theta2 + midpt * s_1), s_2)
+    g_2 = deriv2((theta1 + midpt * k_1), k_2, (theta2 + midpt * s_1), s_2)
+    
+    k_3 = theta1dot + TIMESPAN * l_2
+    s_3 = theta2dot + TIMESPAN * g_2
+    l_3 = deriv1((theta1 + TIMESPAN * k_3), k_2, (theta2 + TIMESPAN * s_3), s_2)
+    g_3 = deriv2((theta1 + TIMESPAN * k_3), k_2, (theta2 + TIMESPAN * s_3), s_2)
+    
+    theta1 = theta1 + TIMESPAN * (k_0 + 2 * k_1 + 2 * k_2 + 2 * k_3)/6
+    theta1dot = theta1dot + TIMESPAN * (l_0 + 2 * l_1 + 2 * l_2 + 2 * l_3)/6
+    theta2 = theta2 + TIMESPAN * (s_0 + 2 * s_1 + 2 * s_2 + 2 * s_3)/6
+    theta2dot = theta2dot + TIMESPAN * (g_0 + 2 * g_1 + 2 * g_2 + 2 * g_3)/6
+    
+    return np.array([theta1, theta1dot, theta2, theta2dot])
 
-
-# where the main script starts
-
-data = integration_process()
+data, data2 = integration_process()
 coordinate_list = []
-for pendulum_data in data:
+for pendulum_data in data2:
     coordinates = positions(pendulum_data[:,0], pendulum_data[:,2])
-    plot_angles(pendulum_data)
     coordinate_list.append(coordinates)
 coordinate_list = np.array(coordinate_list)
-
+plot_angles(data[0], data2[0])
 
 
 fig = plt.figure(figsize = (10,10))
